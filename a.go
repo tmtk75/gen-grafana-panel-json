@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	p := GrafanaPanel{}
+	p := GrafanaPanel{Type: "graph", Xaxis: Xaxis{Mode: "time", Show: true}}
 	m, err := json.Marshal(&p)
 	if err != nil {
 		panic(err)
@@ -87,13 +87,8 @@ type GrafanaPanel struct {
 	} `json:"tooltip"`
 	Transparent bool   `json:"transparent"`
 	Type        string `json:"type"`
-	Xaxis       struct {
-		Mode   string        `json:"mode"`
-		Name   interface{}   `json:"name"`
-		Show   bool          `json:"show"`
-		Values []interface{} `json:"values"`
-	} `json:"xaxis"`
-	Yaxes []struct {
+	Xaxis       Xaxis  `json:"xaxis"`
+	Yaxes       []struct {
 		Format  string      `json:"format"`
 		Label   interface{} `json:"label"`
 		LogBase int         `json:"logBase"`
@@ -101,4 +96,11 @@ type GrafanaPanel struct {
 		Min     interface{} `json:"min"`
 		Show    bool        `json:"show"`
 	} `json:"yaxes"`
+}
+
+type Xaxis struct {
+	Mode   string        `json:"mode"`
+	Name   interface{}   `json:"name"`
+	Show   bool          `json:"show"`
+	Values []interface{} `json:"values"`
 }
