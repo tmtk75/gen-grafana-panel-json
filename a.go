@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -12,6 +14,9 @@ import (
 
 func main() {
 	flag.Parse()
+	if *datasource == "" {
+		log.Fatalln("-datasource is required")
+	}
 	p := NewGrafanaPanel()
 	fill(p)
 	m, err := json.Marshal(p)
@@ -22,25 +27,45 @@ func main() {
 }
 
 var (
-	tagName = flag.String("tagname", "*", "dev*")
+	//tagName = flag.String("tagname", "*", "dev*")
+	filters    = flag.String("filters", "", "e.g: tag:Name,dev-*,instance-type,m3.large")
+	metricName = flag.String("metricName", "CPUUtilization", "CloudWatch MetricName")
+	region     = flag.String("region", "ap-northeast-1", "AWS region")
+	statistics = flag.String("statistics", "Average", "e.g: Average,Maximum,Minimum,Sum,SampleCount")
+	datasource = flag.String("datasource", "", "data source name defined in the grafana")
 )
 
 func fill(p *GrafanaPanel) {
-	svc := ec2.New(session.New(), &aws.Config{Region: aws.String("ap-northeast-1")})
-	filters := []*ec2.Filter{
+	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(*region)})
+
+	f := []*ec2.Filter{
 		&ec2.Filter{
 			Name:   aws.String("instance-state-name"),
 			Values: []*string{aws.String("running")},
 		},
-		&ec2.Filter{
-			Name:   aws.String("tag:Name"),
-			Values: []*string{aws.String(*tagName)},
-		},
+		//&ec2.Filter{
+		//	Name:   aws.String("tag:Name"),
+		//	Values: []*string{aws.String(*tagName)},
+		//},
 	}
-	req := ec2.DescribeInstancesInput{Filters: filters}
+	if *filters != "" {
+		fs := strings.Split(*filters, ",")
+		if len(fs)%2 == 1 {
+			log.Fatalln("illegal filters option: it should be even")
+		}
+		for i := 0; i*2 < len(fs); i++ {
+			f = append(f, &ec2.Filter{
+				Name:   aws.String(strings.TrimSpace(fs[i*2])),
+				Values: []*string{aws.String(strings.TrimSpace(fs[i*2+1]))},
+			})
+		}
+	}
+
+	req := ec2.DescribeInstancesInput{Filters: f}
 	res, err := svc.DescribeInstances(&req)
 	if err != nil {
 		panic(err)
+		log.Fatalf("failed to DescribeInstances: %v", err)
 	}
 	for _, res := range res.Reservations {
 		//fmt.Println(len(res.Instances))
@@ -53,12 +78,12 @@ func fill(p *GrafanaPanel) {
 			}
 			p.Targets = append(p.Targets, Target{
 				Dimensions: map[string]string{"InstanceId": *i.InstanceId},
-				MetricName: "CPUUtilization",
+				MetricName: *metricName,
 				Namespace:  "AWS/EC2",
 				Period:     "",
-				Region:     "ap-northeast-1",
+				Region:     *region,
 				Statistics: []string{
-					"Average",
+					*statistics,
 				},
 				RefID: "A",
 				Alias: alias,
@@ -164,7 +189,7 @@ func NewGrafanaPanel() *GrafanaPanel {
 			ValueType: "individual",
 		},
 		Title:      "EC2 CPU Utilization",
-		Datasource: "CloudWatch(development-jp)",
+		Datasource: *datasource,
 		Fill:       1,
 		ID:         2,
 		Legend: Legend{
