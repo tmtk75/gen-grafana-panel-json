@@ -11,6 +11,7 @@ import (
 
 func main() {
 	p := NewGrafanaPanel()
+	fill(p)
 	m, err := json.Marshal(p)
 	if err != nil {
 		panic(err)
@@ -18,16 +19,25 @@ func main() {
 	fmt.Println(string(m))
 }
 
-func list() {
+func fill(p *GrafanaPanel) {
 	svc := ec2.New(session.New(), &aws.Config{Region: aws.String("ap-northeast-1")})
-	res, err := svc.DescribeInstances(nil)
+	filters := []*ec2.Filter{
+		&ec2.Filter{
+			Name:   aws.String("instance-state-name"),
+			Values: []*string{aws.String("running")},
+		},
+	}
+	req := ec2.DescribeInstancesInput{Filters: filters}
+	res, err := svc.DescribeInstances(&req)
 	if err != nil {
 		panic(err)
 	}
 	for _, res := range res.Reservations {
 		//fmt.Println(len(res.Instances))
 		for _, i := range res.Instances {
-			fmt.Println(i)
+			p.Targets = append(p.Targets, Target{
+				Dimensions: map[string]string{"InstanceId": *i.InstanceId},
+			})
 		}
 	}
 
