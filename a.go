@@ -22,7 +22,18 @@ func main() {
 			Sort:      0,
 			ValueType: "individual",
 		},
-		Title: "EC2 CPU Utilization",
+		Title:      "EC2 CPU Utilization",
+		Datasource: "CloudWatch(development-jp)",
+		Fill:       1,
+		ID:         2,
+		Legend: Legend{
+			Show: true,
+		},
+		Lines:       true,
+		Linewidth:   1,
+		Pointradius: 5,
+		Renderer:    "flot",
+		Span:        8,
 	}
 	m, err := json.Marshal(&p)
 	if err != nil {
@@ -47,24 +58,12 @@ func list() {
 }
 
 type GrafanaPanel struct {
-	AliasColors struct{} `json:"aliasColors"`
-	Bars        bool     `json:"bars"`
-	Datasource  string   `json:"datasource"`
-	Fill        int      `json:"fill"`
-	ID          int      `json:"id"`
-	Legend      struct {
-		AlignAsTable bool `json:"alignAsTable"`
-		Avg          bool `json:"avg"`
-		Current      bool `json:"current"`
-		HideEmpty    bool `json:"hideEmpty"`
-		HideZero     bool `json:"hideZero"`
-		Max          bool `json:"max"`
-		Min          bool `json:"min"`
-		RightSide    bool `json:"rightSide"`
-		Show         bool `json:"show"`
-		Total        bool `json:"total"`
-		Values       bool `json:"values"`
-	} `json:"legend"`
+	AliasColors     struct{}      `json:"aliasColors"`
+	Bars            bool          `json:"bars"`
+	Datasource      string        `json:"datasource"`
+	Fill            int           `json:"fill"`
+	ID              int           `json:"id"`
+	Legend          Legend        `json:"legend"`
 	Lines           bool          `json:"lines"`
 	Linewidth       int           `json:"linewidth"`
 	Links           []interface{} `json:"links"`
@@ -120,4 +119,18 @@ type Tooltip struct {
 	Shared    bool   `json:"shared"`
 	Sort      int    `json:"sort"`
 	ValueType string `json:"value_type"`
+}
+
+type Legend struct {
+	AlignAsTable bool `json:"alignAsTable"`
+	Avg          bool `json:"avg"`
+	Current      bool `json:"current"`
+	HideEmpty    bool `json:"hideEmpty"`
+	HideZero     bool `json:"hideZero"`
+	Max          bool `json:"max"`
+	Min          bool `json:"min"`
+	RightSide    bool `json:"rightSide"`
+	Show         bool `json:"show"`
+	Total        bool `json:"total"`
+	Values       bool `json:"values"`
 }
