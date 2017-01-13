@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"fmt"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -10,6 +11,7 @@ import (
 )
 
 func main() {
+	flag.Parse()
 	p := NewGrafanaPanel()
 	fill(p)
 	m, err := json.Marshal(p)
@@ -19,12 +21,20 @@ func main() {
 	fmt.Println(string(m))
 }
 
+var (
+	tagName = flag.String("tagname", "*", "dev*")
+)
+
 func fill(p *GrafanaPanel) {
 	svc := ec2.New(session.New(), &aws.Config{Region: aws.String("ap-northeast-1")})
 	filters := []*ec2.Filter{
 		&ec2.Filter{
 			Name:   aws.String("instance-state-name"),
 			Values: []*string{aws.String("running")},
+		},
+		&ec2.Filter{
+			Name:   aws.String("tag:Name"),
+			Values: []*string{aws.String(*tagName)},
 		},
 	}
 	req := ec2.DescribeInstancesInput{Filters: filters}
