@@ -35,6 +35,12 @@ func fill(p *GrafanaPanel) {
 	for _, res := range res.Reservations {
 		//fmt.Println(len(res.Instances))
 		for _, i := range res.Instances {
+			alias := ""
+			for _, t := range i.Tags {
+				if *t.Key == "Name" {
+					alias = *t.Value
+				}
+			}
 			p.Targets = append(p.Targets, Target{
 				Dimensions: map[string]string{"InstanceId": *i.InstanceId},
 				MetricName: "CPUUtilization",
@@ -45,6 +51,7 @@ func fill(p *GrafanaPanel) {
 					"Average",
 				},
 				RefID: "A",
+				Alias: alias,
 			})
 		}
 	}
