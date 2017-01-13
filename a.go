@@ -37,6 +37,14 @@ func fill(p *GrafanaPanel) {
 		for _, i := range res.Instances {
 			p.Targets = append(p.Targets, Target{
 				Dimensions: map[string]string{"InstanceId": *i.InstanceId},
+				MetricName: "CPUUtilization",
+				Namespace:  "AWS/EC2",
+				Period:     "",
+				Region:     "ap-northeast-1",
+				Statistics: []string{
+					"Average",
+				},
+				RefID: "A",
 			})
 		}
 	}
