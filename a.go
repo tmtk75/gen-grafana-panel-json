@@ -10,50 +10,8 @@ import (
 )
 
 func main() {
-	p := GrafanaPanel{
-		Type:            "graph",
-		Links:           []interface{}{},
-		NullPointMode:   "null",
-		SeriesOverrides: []interface{}{},
-		Thresholds:      []interface{}{},
-		Xaxis:           Xaxis{Mode: "time", Show: true, Values: []interface{}{}},
-		Yaxes: []Yaxis{
-			{Format: "short", Show: true, LogBase: 1},
-			{Format: "short", Show: true, LogBase: 1},
-		},
-		Tooltip: Tooltip{
-			Shared:    true,
-			Sort:      0,
-			ValueType: "individual",
-		},
-		Title:      "EC2 CPU Utilization",
-		Datasource: "CloudWatch(development-jp)",
-		Fill:       1,
-		ID:         2,
-		Legend: Legend{
-			Show: true,
-		},
-		Lines:       true,
-		Linewidth:   1,
-		Pointradius: 5,
-		Renderer:    "flot",
-		Span:        8,
-		Targets: []Target{
-			{
-				Alias: "frontend-0001",
-				Dimensions: map[string]string{
-					"InstanceId": "i-0828d396",
-				},
-				MetricName: "CPUUtilization",
-				Namespace:  "AWS/EC2",
-				Period:     "",
-				RefID:      "A",
-				Region:     "ap-northeast-1",
-				Statistics: []string{"Average"},
-			},
-		},
-	}
-	m, err := json.Marshal(&p)
+	p := NewGrafanaPanel()
+	m, err := json.Marshal(p)
 	if err != nil {
 		panic(err)
 	}
@@ -151,4 +109,37 @@ type Target struct {
 	RefID      string            `json:"refId"`
 	Region     string            `json:"region"`
 	Statistics []string          `json:"statistics"`
+}
+
+func NewGrafanaPanel() *GrafanaPanel {
+	return &GrafanaPanel{
+		Type:            "graph",
+		Links:           []interface{}{},
+		NullPointMode:   "null",
+		SeriesOverrides: []interface{}{},
+		Thresholds:      []interface{}{},
+		Xaxis:           Xaxis{Mode: "time", Show: true, Values: []interface{}{}},
+		Yaxes: []Yaxis{
+			{Format: "short", Show: true, LogBase: 1},
+			{Format: "short", Show: true, LogBase: 1},
+		},
+		Tooltip: Tooltip{
+			Shared:    true,
+			Sort:      0,
+			ValueType: "individual",
+		},
+		Title:      "EC2 CPU Utilization",
+		Datasource: "CloudWatch(development-jp)",
+		Fill:       1,
+		ID:         2,
+		Legend: Legend{
+			Show: true,
+		},
+		Lines:       true,
+		Linewidth:   1,
+		Pointradius: 5,
+		Renderer:    "flot",
+		Span:        8,
+		Targets:     []Target{},
+	}
 }
