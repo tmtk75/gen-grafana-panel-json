@@ -22,6 +22,7 @@ func main() {
 			Sort:      0,
 			ValueType: "individual",
 		},
+		Title: "EC2 CPU Utilization",
 	}
 	m, err := json.Marshal(&p)
 	if err != nil {
