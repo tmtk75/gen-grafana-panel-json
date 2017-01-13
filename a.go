@@ -10,7 +10,19 @@ import (
 )
 
 func main() {
-	p := GrafanaPanel{Type: "graph", Xaxis: Xaxis{Mode: "time", Show: true}}
+	p := GrafanaPanel{
+		Type:  "graph",
+		Xaxis: Xaxis{Mode: "time", Show: true},
+		Yaxes: []Yaxis{
+			{Format: "short", Show: true, LogBase: 1},
+			{Format: "short", Show: true, LogBase: 1},
+		},
+		Tooltip: Tooltip{
+			Shared:    true,
+			Sort:      0,
+			ValueType: "individual",
+		},
+	}
 	m, err := json.Marshal(&p)
 	if err != nil {
 		panic(err)
@@ -76,26 +88,15 @@ type GrafanaPanel struct {
 		Region     string   `json:"region"`
 		Statistics []string `json:"statistics"`
 	} `json:"targets"`
-	Thresholds []interface{} `json:"thresholds"`
-	TimeFrom   interface{}   `json:"timeFrom"`
-	TimeShift  interface{}   `json:"timeShift"`
-	Title      string        `json:"title"`
-	Tooltip    struct {
-		Shared    bool   `json:"shared"`
-		Sort      int    `json:"sort"`
-		ValueType string `json:"value_type"`
-	} `json:"tooltip"`
-	Transparent bool   `json:"transparent"`
-	Type        string `json:"type"`
-	Xaxis       Xaxis  `json:"xaxis"`
-	Yaxes       []struct {
-		Format  string      `json:"format"`
-		Label   interface{} `json:"label"`
-		LogBase int         `json:"logBase"`
-		Max     interface{} `json:"max"`
-		Min     interface{} `json:"min"`
-		Show    bool        `json:"show"`
-	} `json:"yaxes"`
+	Thresholds  []interface{} `json:"thresholds"`
+	TimeFrom    interface{}   `json:"timeFrom"`
+	TimeShift   interface{}   `json:"timeShift"`
+	Title       string        `json:"title"`
+	Tooltip     Tooltip       `json:"tooltip"`
+	Transparent bool          `json:"transparent"`
+	Type        string        `json:"type"`
+	Xaxis       Xaxis         `json:"xaxis"`
+	Yaxes       []Yaxis       `json:"yaxes"`
 }
 
 type Xaxis struct {
@@ -103,4 +104,19 @@ type Xaxis struct {
 	Name   interface{}   `json:"name"`
 	Show   bool          `json:"show"`
 	Values []interface{} `json:"values"`
+}
+
+type Yaxis struct {
+	Format  string      `json:"format"`
+	Label   interface{} `json:"label"`
+	LogBase int         `json:"logBase"`
+	Max     interface{} `json:"max"`
+	Min     interface{} `json:"min"`
+	Show    bool        `json:"show"`
+}
+
+type Tooltip struct {
+	Shared    bool   `json:"shared"`
+	Sort      int    `json:"sort"`
+	ValueType string `json:"value_type"`
 }
