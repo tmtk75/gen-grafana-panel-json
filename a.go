@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -15,7 +16,10 @@ import (
 func main() {
 	flag.Parse()
 	if *datasource == "" {
-		log.Fatalln("-datasource is required")
+		*datasource = os.Getenv("DATASOURCE")
+		if *datasource == "" {
+			log.Fatalln("-datasource is required")
+		}
 	}
 	p := NewGrafanaPanel()
 	fill(p)
@@ -67,6 +71,8 @@ func fill(p *GrafanaPanel) {
 		panic(err)
 		log.Fatalf("failed to DescribeInstances: %v", err)
 	}
+
+	ref := 0
 	for _, res := range res.Reservations {
 		//fmt.Println(len(res.Instances))
 		for _, i := range res.Instances {
@@ -85,9 +91,10 @@ func fill(p *GrafanaPanel) {
 				Statistics: []string{
 					*statistics,
 				},
-				RefID: "A",
+				RefID: fmt.Sprintf("A%d", ref),
 				Alias: alias,
 			})
+			ref += 1
 		}
 	}
 
