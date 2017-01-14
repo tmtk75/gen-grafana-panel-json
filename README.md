@@ -1,7 +1,12 @@
 # README
 Generate Grafana panel JSON for CloudWatch datasource.
 
-You need to configure `~/.aws/credentials`.
+Grafana has [HTTP API](http://docs.grafana.org/reference/http_api) but at a glance it doens't have
+APIs for panel operations. We con configure panels with JSON. This command generates
+JSONs for panels which datasource is CloudWatch.
+
+# How to use
+You need to configure `~/.aws/credentials` first.
 
 Generate a Grafana panel JSON for all EC2 instances in ap-northeast-1.
 ```

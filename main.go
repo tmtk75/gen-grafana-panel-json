@@ -34,7 +34,7 @@ var (
 func main() {
 	flag.Parse()
 	if *version {
-		fmt.Println(versionLong)
+		fmt.Println(versionShort)
 		os.Exit(0)
 	}
 
