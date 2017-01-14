@@ -25,7 +25,7 @@ var (
 	region     = flag.String("region", "ap-northeast-1", "AWS region")
 	statistics = flag.String("statistics", "Average", "e.g: Average,Maximum,Minimum,Sum,SampleCount")
 	datasource = flag.String("datasource", "", "datasource name defined in the grafana")
-	useStdin   = flag.Bool("stdin", false, "TODO")
+	useStdin   = flag.Bool("stdin", false, "Use stdin for targets. This doesn't access to CloudWatch")
 )
 
 func main() {
