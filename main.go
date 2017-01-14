@@ -9,6 +9,7 @@ import (
 	"os"
 	"sort"
 	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -231,7 +232,7 @@ func NewGrafanaPanel(title string) *GrafanaPanel {
 		Title:      "EC2 " + title,
 		Datasource: *datasource,
 		Fill:       1,
-		ID:         2,
+		ID:         int(time.Now().Unix()),
 		Legend: Legend{
 			Show: true,
 		},
