@@ -23,16 +23,28 @@ var (
 	statistics = flag.String("statistics", "Average", "e.g: Average,Maximum,Minimum,Sum,SampleCount")
 	datasource = flag.String("datasource", "", "datasource name defined in the grafana")
 	useStdin   = flag.Bool("stdin", false, "Use stdin for targets. This doesn't access to CloudWatch")
+	version    = flag.Bool("version", false, "Print version")
+)
+
+var (
+	versionShort = "" // Expected given by -ldflags
+	versionLong  = "" // Expected given by -ldflags
 )
 
 func main() {
 	flag.Parse()
+	if *version {
+		fmt.Println(versionLong)
+		os.Exit(0)
+	}
+
 	if *datasource == "" {
 		*datasource = os.Getenv("DATASOURCE")
 		if *datasource == "" {
 			log.Fatalln("-datasource is required")
 		}
 	}
+
 	p := NewGrafanaPanel()
 	p.Targets = NewTargets()
 	m, err := json.Marshal(p)
