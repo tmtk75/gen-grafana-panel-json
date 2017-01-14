@@ -4,14 +4,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"log"
 	"os"
 	"sort"
 	"strings"
-
-	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -247,13 +244,4 @@ func (f Targets) Less(i, j int) bool {
 
 func (f Targets) Swap(i, j int) {
 	f[i], f[j] = f[j], f[i]
-}
-
-func Either(file *os.File) func(r io.Reader) io.Reader {
-	return func(r io.Reader) io.Reader {
-		if terminal.IsTerminal(int(file.Fd())) {
-			return r
-		}
-		return file
-	}
 }
