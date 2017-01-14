@@ -4,13 +4,26 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"sort"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+)
+
+var (
+	//tagName = flag.String("tagname", "*", "dev*")
+	filters    = flag.String("filters", "", "e.g: tag:Name,dev-*,instance-type,m3.large")
+	metricName = flag.String("metricName", "CPUUtilization", "CloudWatch MetricName")
+	region     = flag.String("region", "ap-northeast-1", "AWS region")
+	statistics = flag.String("statistics", "Average", "e.g: Average,Maximum,Minimum,Sum,SampleCount")
+	datasource = flag.String("datasource", "", "data source name defined in the grafana")
 )
 
 func main() {
@@ -30,16 +43,11 @@ func main() {
 	fmt.Println(string(m))
 }
 
-var (
-	//tagName = flag.String("tagname", "*", "dev*")
-	filters    = flag.String("filters", "", "e.g: tag:Name,dev-*,instance-type,m3.large")
-	metricName = flag.String("metricName", "CPUUtilization", "CloudWatch MetricName")
-	region     = flag.String("region", "ap-northeast-1", "AWS region")
-	statistics = flag.String("statistics", "Average", "e.g: Average,Maximum,Minimum,Sum,SampleCount")
-	datasource = flag.String("datasource", "", "data source name defined in the grafana")
-)
-
 func NewTargets() []Target {
+	return NewTargetsEC2()
+}
+
+func NewTargetsEC2() []Target {
 	f := []*ec2.Filter{
 		&ec2.Filter{
 			Name:   aws.String("instance-state-name"),
@@ -98,6 +106,7 @@ func NewTargets() []Target {
 		}
 	}
 
+	sort.Sort(Targets(targets))
 	return targets
 }
 
@@ -209,5 +218,28 @@ func NewGrafanaPanel() *GrafanaPanel {
 		Renderer:    "flot",
 		Span:        8,
 		Targets:     []Target{},
+	}
+}
+
+type Targets []Target
+
+func (f Targets) Len() int {
+	return len(f)
+}
+
+func (f Targets) Less(i, j int) bool {
+	return strings.Compare(f[i].Alias, f[j].Alias) < 0
+}
+
+func (f Targets) Swap(i, j int) {
+	f[i], f[j] = f[j], f[i]
+}
+
+func Either(file *os.File) func(r io.Reader) io.Reader {
+	return func(r io.Reader) io.Reader {
+		if terminal.IsTerminal(int(file.Fd())) {
+			return r
+		}
+		return file
 	}
 }
