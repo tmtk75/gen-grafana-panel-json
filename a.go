@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"log"
 	"os"
 	"sort"
@@ -24,6 +25,7 @@ var (
 	region     = flag.String("region", "ap-northeast-1", "AWS region")
 	statistics = flag.String("statistics", "Average", "e.g: Average,Maximum,Minimum,Sum,SampleCount")
 	datasource = flag.String("datasource", "", "data source name defined in the grafana")
+	useStdin   = flag.Bool("stdin", false, "TODO")
 )
 
 func main() {
@@ -44,6 +46,18 @@ func main() {
 }
 
 func NewTargets() []Target {
+	if *useStdin {
+		bytes, err := ioutil.ReadAll(os.Stdin)
+		if err != nil {
+			log.Fatalf("failed to read stdin: %v", err)
+		}
+		var a Targets
+		err = json.Unmarshal(bytes, &a)
+		if err != nil {
+			log.Fatalf("failed to unmarshal: %v", err)
+		}
+		return a
+	}
 	return NewTargetsEC2()
 }
 
