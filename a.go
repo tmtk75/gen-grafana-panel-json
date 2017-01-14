@@ -22,10 +22,10 @@ func main() {
 		}
 	}
 	p := NewGrafanaPanel()
-	fill(p)
+	p.Targets = NewTargets()
 	m, err := json.Marshal(p)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to marshal: %v", err)
 	}
 	fmt.Println(string(m))
 }
@@ -39,9 +39,7 @@ var (
 	datasource = flag.String("datasource", "", "data source name defined in the grafana")
 )
 
-func fill(p *GrafanaPanel) {
-	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(*region)})
-
+func NewTargets() []Target {
 	f := []*ec2.Filter{
 		&ec2.Filter{
 			Name:   aws.String("instance-state-name"),
@@ -65,14 +63,16 @@ func fill(p *GrafanaPanel) {
 		}
 	}
 
+	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(*region)})
 	req := ec2.DescribeInstancesInput{Filters: f}
 	res, err := svc.DescribeInstances(&req)
 	if err != nil {
-		panic(err)
+		log.Fatalf("failed to describe-instances: %v", err)
 		log.Fatalf("failed to DescribeInstances: %v", err)
 	}
 
 	ref := 0
+	targets := make([]Target, 0)
 	for _, res := range res.Reservations {
 		//fmt.Println(len(res.Instances))
 		for _, i := range res.Instances {
@@ -82,7 +82,7 @@ func fill(p *GrafanaPanel) {
 					alias = *t.Value
 				}
 			}
-			p.Targets = append(p.Targets, Target{
+			targets = append(targets, Target{
 				Dimensions: map[string]string{"InstanceId": *i.InstanceId},
 				MetricName: *metricName,
 				Namespace:  "AWS/EC2",
@@ -98,6 +98,7 @@ func fill(p *GrafanaPanel) {
 		}
 	}
 
+	return targets
 }
 
 type GrafanaPanel struct {
