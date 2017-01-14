@@ -24,7 +24,7 @@ var (
 	metricName = flag.String("metricName", "CPUUtilization", "CloudWatch MetricName")
 	region     = flag.String("region", "ap-northeast-1", "AWS region")
 	statistics = flag.String("statistics", "Average", "e.g: Average,Maximum,Minimum,Sum,SampleCount")
-	datasource = flag.String("datasource", "", "data source name defined in the grafana")
+	datasource = flag.String("datasource", "", "datasource name defined in the grafana")
 	useStdin   = flag.Bool("stdin", false, "TODO")
 )
 

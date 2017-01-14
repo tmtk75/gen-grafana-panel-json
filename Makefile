@@ -1,2 +1,2 @@
-grafana-panel-json: a.go
-	go build -o grafana-panel-json a.go
+gen-grafana-panel-json: main.go
+	go build -o gen-grafana-panel-json main.go
