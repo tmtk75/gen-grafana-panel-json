@@ -8,9 +8,9 @@ JSONs for panels which datasource is CloudWatch.
 # How to use
 You need to configure `~/.aws/credentials` first.
 
-Generate a Grafana panel JSON for all EC2 instances in ap-northeast-1.
+Generate a Grafana panel JSON for all EC2 instances in ap-northeast-1 for CPUUtilization.
 ```
-$ gen-grafana-panel-json -datasource CloudWatch -region ap-northeast-1
+$ gen-grafana-panel-json -datasource CloudWatch
 ```
 
 Switching profile.
