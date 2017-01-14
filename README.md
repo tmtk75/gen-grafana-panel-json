@@ -20,18 +20,7 @@ $ AWS_PROFILE=staging gen-grafana-panel-json -datasource CloudWatch -region us-w
 
 To filter EC2, use `-filters`.
 ```
-$ gen-grafana-panel-json -datasource CloudWatch -filters tag:Name,dev-*,instance-type,t2.small \
-  | jq . | head
-{
-  "aliasColors": {},
-  "bars": false,
-  "datasource": "CloudWatch",
-  "fill": 1,
-  "id": 2,
-  "legend": {
-    "alignAsTable": false,
-    "avg": false,
-    "current": false,
+$ gen-grafana-panel-json -datasource CloudWatch -filters tag:Name,dev-*,instance-type,t2.small
 ```
 
 To exclude some elements in targets, use `jq` and `-stdin` option.
