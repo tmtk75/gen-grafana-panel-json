@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/ec2"
 	"github.com/jawher/mow.cli"
 )
@@ -24,20 +26,17 @@ func main() {
 	app := cli.App("gen-grafana-panel-json", "JSON Generator for Grafana CloudWatch datasource")
 	app.Version("version", versionShort)
 	app.Command("ec2", "EC2", func(c *cli.Cmd) {
-		var (
-			ds      = c.String(cli.StringArg{Name: "DATASOURCE_NAME", Desc: "Grafana datasource name"})
-			filters = c.String(cli.StringOpt{Name: "filters", Desc: "e.g: tag:Name,dev-*,instance-type,m3.large"})
-		)
+		filters := c.String(cli.StringOpt{Name: "filters", Desc: "e.g: tag:Name,dev-*,instance-type,m3.large"})
 		opts := newCloudWatchOpts(c)
 		c.Spec = "DATASOURCE_NAME [OPTIONS]"
 		c.Action = func() {
-			p := NewGrafanaPanel(*ds, "EC2 "+*opts.metricName)
+			p := NewGrafanaPanel(*opts.dsName, "EC2 "+*opts.metricName)
 			p.Targets = NewTargetsEC2(opts, *filters)
 			PrintGrafanaPanelJSON(p)
 		}
 	})
 	app.Command("sqs", "SQS", func(c *cli.Cmd) {
-		ds := c.String(cli.StringArg{Name: "DATASOURCE_NAME", Desc: "Grafana datasource name"})
+		//rp := c.String(cli.StringOpt{Name: "remove-prefix", Desc: "Remove prefix from alias"})
 		opts := newCloudWatchOpts(c)
 		c.Spec = "DATASOURCE_NAME [OPTIONS]"
 		c.Action = func() {
@@ -45,22 +44,51 @@ func main() {
 			if err != nil {
 				log.Fatalf("failed to read stdin: %v", err)
 			}
-			p := NewGrafanaPanel(*ds, "SQS "+*opts.metricName)
+			p := NewGrafanaPanel(*opts.dsName, "SQS "+*opts.metricName)
 			p.Targets = NewTargetsSQS(opts, strings.Split(string(bytes), "\n"))
 			PrintGrafanaPanelJSON(p)
 		}
+	})
+	app.Command("cloudwatch", "CloudWatch", func(c *cli.Cmd) {
+		c.Command("list-metrics", "", func(c *cli.Cmd) {
+			var (
+				r  = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
+				ns = c.String(cli.StringArg{Name: "NAMESPACE", Desc: "CloudWatch namespace e.g) AWS/EC2"})
+			)
+			c.Spec = "NAMESPACE [REGION]"
+			c.Action = func() {
+				ListMetrics(*ns, *r, nil)
+			}
+		})
 	})
 	app.Run(os.Args)
 }
 
 type cloudWatchOpts struct {
+	dsName     *string
 	metricName *string
 	region     *string
 	statistics *string
 }
 
+func ListMetrics(ns, region string, nextToken *string) {
+	svc := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(region)})
+	req := cloudwatch.ListMetricsInput{Namespace: aws.String(ns)}
+	res, err := svc.ListMetrics(&req)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	for _, m := range res.Metrics {
+		fmt.Printf("%v %v\n", *m.Dimensions[0].Value, *m.MetricName)
+	}
+	if res.NextToken != nil && *res.NextToken != "" {
+		ListMetrics(ns, region, res.NextToken)
+	}
+}
+
 func newCloudWatchOpts(c *cli.Cmd) *cloudWatchOpts {
 	return &cloudWatchOpts{
+		dsName:     c.String(cli.StringArg{Name: "DATASOURCE_NAME", Desc: "Grafana datasource name"}),
 		metricName: c.String(cli.StringOpt{Name: "metricName m", Value: "CPUUtilization", Desc: "CloudWatch MetricName"}),
 		region:     c.String(cli.StringOpt{Name: "region r", Value: "ap-northeast-1", Desc: "AWS region"}),
 		statistics: c.String(cli.StringOpt{Name: "statistics s", Value: "Average", Desc: "e.g: Average,Maximum,Minimum,Sum,SampleCount"}),
@@ -73,6 +101,12 @@ func PrintGrafanaPanelJSON(p *GrafanaPanel) {
 		log.Fatalf("failed to marshal: %v", err)
 	}
 	fmt.Println(string(m))
+}
+
+func alias(s string) string {
+	a := regexp.MustCompile("Of").ReplaceAllString(s, "")
+	re := regexp.MustCompile("[a-z]+")
+	return re.ReplaceAllString(a, "")
 }
 
 func NewTargetsSQS(opts *cloudWatchOpts, urls []string) []Target {
@@ -96,7 +130,7 @@ func NewTargetsSQS(opts *cloudWatchOpts, urls []string) []Target {
 			Dimensions: map[string]string{
 				"QueueName": qn,
 			},
-			MetricName: "ApproximateNumberOfMessagesVisible",
+			MetricName: *opts.metricName,
 			Namespace:  "AWS/SQS",
 			Period:     "300",
 			RefID:      fmt.Sprintf("ID-%v", i),
@@ -104,7 +138,7 @@ func NewTargetsSQS(opts *cloudWatchOpts, urls []string) []Target {
 			Statistics: []string{
 				*opts.statistics,
 			},
-			Alias: "ANMV:" + qn,
+			Alias: alias(*opts.metricName) + ":" + qn,
 		}
 		targets = append(targets, t)
 	}

@@ -35,7 +35,12 @@ List metirc names.
 ```
 $ aws cloudwatch list-metrics --namespace AWS/SQS
 ```
-`ApproximateNumberOfMessagesVisible`
+Let's say you pick up `ApproximateNumberOfMessagesVisible`.
 ```
-$ gen-grafana-panel-json CloudWatch -m ApproximateNumberOfMessagesVisible
+aws sqs list-queues --queue-name-prefix dev- \
+  | jq -r .QueueUrls[] | grep -v '_tmp' \
+  | tee qnames
+```
+```
+$ cat qnames | gen-grafana-panel-json CloudWatch -m ApproximateNumberOfMessagesVisible
 ```
