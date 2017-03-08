@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -13,17 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
-)
-
-var (
-	//tagName = flag.String("tagname", "*", "dev*")
-	filters    = flag.String("filters", "", "e.g: tag:Name,dev-*,instance-type,m3.large")
-	metricName = flag.String("metricName", "CPUUtilization", "CloudWatch MetricName")
-	region     = flag.String("region", "ap-northeast-1", "AWS region")
-	statistics = flag.String("statistics", "Average", "e.g: Average,Maximum,Minimum,Sum,SampleCount")
-	datasource = flag.String("datasource", "", "datasource name defined in the grafana")
-	useStdin   = flag.Bool("stdin", false, "Use stdin for targets. This doesn't access to CloudWatch")
-	version    = flag.Bool("version", false, "Print version")
+	"github.com/jawher/mow.cli"
 )
 
 var (
@@ -32,21 +21,53 @@ var (
 )
 
 func main() {
-	flag.Parse()
-	if *version {
-		fmt.Println(versionShort)
-		os.Exit(0)
-	}
-
-	if *datasource == "" {
-		*datasource = os.Getenv("DATASOURCE")
-		if *datasource == "" {
-			log.Fatalln("-datasource is required")
+	app := cli.App("gen-grafana-panel-json", "JSON Generator for Grafana CloudWatch datasource")
+	app.Version("version", versionShort)
+	app.Command("ec2", "EC2", func(c *cli.Cmd) {
+		var (
+			ds      = c.String(cli.StringArg{Name: "DATASOURCE_NAME", Desc: "Grafana datasource name"})
+			filters = c.String(cli.StringOpt{Name: "filters", Desc: "e.g: tag:Name,dev-*,instance-type,m3.large"})
+		)
+		opts := newCloudWatchOpts(c)
+		c.Spec = "DATASOURCE_NAME [OPTIONS]"
+		c.Action = func() {
+			p := NewGrafanaPanel(*ds, "EC2 "+*opts.metricName)
+			p.Targets = NewTargetsEC2(opts, *filters)
+			PrintGrafanaPanelJSON(p)
 		}
-	}
+	})
+	app.Command("sqs", "SQS", func(c *cli.Cmd) {
+		ds := c.String(cli.StringArg{Name: "DATASOURCE_NAME", Desc: "Grafana datasource name"})
+		opts := newCloudWatchOpts(c)
+		c.Spec = "DATASOURCE_NAME [OPTIONS]"
+		c.Action = func() {
+			bytes, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				log.Fatalf("failed to read stdin: %v", err)
+			}
+			p := NewGrafanaPanel(*ds, "SQS "+*opts.metricName)
+			p.Targets = NewTargetsSQS(opts, strings.Split(string(bytes), "\n"))
+			PrintGrafanaPanelJSON(p)
+		}
+	})
+	app.Run(os.Args)
+}
 
-	p := NewGrafanaPanel()
-	p.Targets = NewTargets()
+type cloudWatchOpts struct {
+	metricName *string
+	region     *string
+	statistics *string
+}
+
+func newCloudWatchOpts(c *cli.Cmd) *cloudWatchOpts {
+	return &cloudWatchOpts{
+		metricName: c.String(cli.StringOpt{Name: "metricName m", Value: "CPUUtilization", Desc: "CloudWatch MetricName"}),
+		region:     c.String(cli.StringOpt{Name: "region r", Value: "ap-northeast-1", Desc: "AWS region"}),
+		statistics: c.String(cli.StringOpt{Name: "statistics s", Value: "Average", Desc: "e.g: Average,Maximum,Minimum,Sum,SampleCount"}),
+	}
+}
+
+func PrintGrafanaPanelJSON(p *GrafanaPanel) {
 	m, err := json.Marshal(p)
 	if err != nil {
 		log.Fatalf("failed to marshal: %v", err)
@@ -54,23 +75,43 @@ func main() {
 	fmt.Println(string(m))
 }
 
-func NewTargets() []Target {
-	if *useStdin {
-		bytes, err := ioutil.ReadAll(os.Stdin)
-		if err != nil {
-			log.Fatalf("failed to read stdin: %v", err)
+func NewTargetsSQS(opts *cloudWatchOpts, urls []string) []Target {
+	//svc := sqs.New(session.New(), &aws.Config{Region: aws.String(*region)})
+	//req := sqs.ListQueuesInput{
+	//	QueueNamePrefix: aws.String("stg-jp_1"),
+	//}
+	//res, err := svc.ListQueues(&req)
+	//if err != nil {
+	//	return []Target{}
+	//}
+	targets := make([]Target, 0)
+	for i, q := range urls {
+		if q == "" {
+			continue // skip blank line
 		}
-		var a Targets
-		err = json.Unmarshal(bytes, &a)
-		if err != nil {
-			log.Fatalf("failed to unmarshal: %v", err)
+		s := strings.Split(q, "/")
+		qn := s[len(s)-1] // queue name
+		//fmt.Println(qn)
+		t := Target{
+			Dimensions: map[string]string{
+				"QueueName": qn,
+			},
+			MetricName: "ApproximateNumberOfMessagesVisible",
+			Namespace:  "AWS/SQS",
+			Period:     "300",
+			RefID:      fmt.Sprintf("ID-%v", i),
+			Region:     *opts.region,
+			Statistics: []string{
+				*opts.statistics,
+			},
+			Alias: "ANMV:" + qn,
 		}
-		return a
+		targets = append(targets, t)
 	}
-	return NewTargetsEC2()
+	return targets //[0:20]
 }
 
-func NewTargetsEC2() []Target {
+func NewTargetsEC2(opts *cloudWatchOpts, filters string) []Target {
 	f := []*ec2.Filter{
 		&ec2.Filter{
 			Name:   aws.String("instance-state-name"),
@@ -81,8 +122,8 @@ func NewTargetsEC2() []Target {
 		//	Values: []*string{aws.String(*tagName)},
 		//},
 	}
-	if *filters != "" {
-		fs := strings.Split(*filters, ",")
+	if filters != "" {
+		fs := strings.Split(filters, ",")
 		if len(fs)%2 == 1 {
 			log.Fatalln("illegal filters option: it should be even")
 		}
@@ -94,7 +135,7 @@ func NewTargetsEC2() []Target {
 		}
 	}
 
-	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(*region)})
+	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(*opts.region)})
 	req := ec2.DescribeInstancesInput{Filters: f}
 	res, err := svc.DescribeInstances(&req)
 	if err != nil {
@@ -115,12 +156,12 @@ func NewTargetsEC2() []Target {
 			}
 			targets = append(targets, Target{
 				Dimensions: map[string]string{"InstanceId": *i.InstanceId},
-				MetricName: *metricName,
+				MetricName: *opts.metricName,
 				Namespace:  "AWS/EC2",
 				Period:     "",
-				Region:     *region,
+				Region:     *opts.region,
 				Statistics: []string{
-					*statistics,
+					*opts.statistics,
 				},
 				RefID: fmt.Sprintf("A%d", ref),
 				Alias: alias,
@@ -211,7 +252,7 @@ type Target struct {
 	Statistics []string          `json:"statistics"`
 }
 
-func NewGrafanaPanel() *GrafanaPanel {
+func NewGrafanaPanel(ds, title string) *GrafanaPanel {
 	return &GrafanaPanel{
 		Type:            "graph",
 		Links:           []interface{}{},
@@ -228,8 +269,8 @@ func NewGrafanaPanel() *GrafanaPanel {
 			Sort:      0,
 			ValueType: "individual",
 		},
-		Title:      "EC2 CPU Utilization",
-		Datasource: *datasource,
+		Title:      title,
+		Datasource: ds,
 		Fill:       1,
 		ID:         2,
 		Legend: Legend{

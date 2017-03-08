@@ -29,3 +29,13 @@ $ gen-grafana-panel-json -datasource CloudWatch \
   | jq '[.targets[]|select((.alias|test("dev-.*"))|not)]' \
   | gen-grafana-panel-json -stdin
 ```
+
+# SQS
+List metirc names.
+```
+$ aws cloudwatch list-metrics --namespace AWS/SQS
+```
+`ApproximateNumberOfMessagesVisible`
+```
+$ gen-grafana-panel-json CloudWatch -m ApproximateNumberOfMessagesVisible
+```

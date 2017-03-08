@@ -1,8 +1,8 @@
 hash: f61fababf072cd79ace36920905e2b01afb2ca7082ea5fed40c3423d5db48f6a
-updated: 2017-01-14T10:58:59.615851817+09:00
+updated: 2017-03-08T21:03:13.22494428+09:00
 imports:
 - name: github.com/aws/aws-sdk-go
-  version: 63ce630574a5ec05ecd8e8de5cea16332a5a684d
+  version: fa1a4bc634fffa6ac468d8fb217e05475e063440
   subpackages:
   - aws
   - aws/awserr
@@ -30,7 +30,7 @@ imports:
   - service/ec2
   - service/sts
 - name: github.com/go-ini/ini
-  version: 6f66b0e091edb3c7b380f7c4f0f884274d550b67
+  version: c437d20015c2ab6454b7a66a13109ff0fb99e17a
 - name: github.com/jmespath/go-jmespath
   version: bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d
 testImports: []
