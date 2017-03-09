@@ -3,11 +3,14 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 	"sort"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -40,12 +43,16 @@ func main() {
 		p := c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
 		c.Spec = "DATASOURCE_NAME PREFIX [OPTIONS]"
 		c.Action = func() {
-			//bytes, err := ioutil.ReadAll(os.Stdin)
-			//if err != nil {
-			//	log.Fatalf("failed to read stdin: %v", err)
-			//}
-			///qs := strings.Split(string(bytes), "\n")
-			qs := ListQueues(*opts.region, *p)
+			var qs []string
+			if terminal.IsTerminal(int(os.Stdin.Fd())) {
+				qs = ListQueues(*opts.region, *p)
+			} else {
+				bytes, err := ioutil.ReadAll(os.Stdin)
+				if err != nil {
+					log.Fatalf("failed to read stdin: %v", err)
+				}
+				qs = strings.Split(strings.Trim(string(bytes), "\n"), "\n")
+			}
 			p := NewGrafanaPanel(*opts.dsName, "SQS "+*opts.metricName)
 			p.Targets = NewTargetsSQS(opts, qs)
 			PrintGrafanaPanelJSON(p)
