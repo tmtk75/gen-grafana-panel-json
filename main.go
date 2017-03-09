@@ -29,7 +29,7 @@ func main() {
 	app := cli.App("gen-grafana-panel-json", "JSON Generator for Grafana CloudWatch datasource")
 	app.Version("version", versionShort)
 	app.Command("ec2", "EC2", func(c *cli.Cmd) {
-		filters := c.String(cli.StringOpt{Name: "filters", Desc: "e.g: tag:Name,dev-*,instance-type,m3.large"})
+		filters := c.String(cli.StringOpt{Name: "filters", Desc: `e.g: "tag:Name,dev-*", "instance-type,m3.large"`})
 		opts := newCloudWatchOpts(c)
 		c.Spec = "DATASOURCE_NAME [OPTIONS]"
 		c.Action = func() {
@@ -61,10 +61,10 @@ func main() {
 	})
 	app.Command("list-queues", "SQS", func(c *cli.Cmd) {
 		var (
-			r = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
 			p = c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
+			r = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
 		)
-		c.Spec = "REGION [PREFIX]"
+		c.Spec = "PREFIX [REGION]"
 		c.Action = func() {
 			for _, q := range ListQueues(*r, *p) {
 				fmt.Printf("%v\n", q)
