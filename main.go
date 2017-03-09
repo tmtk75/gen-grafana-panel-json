@@ -184,7 +184,8 @@ func NewTargetsSQS(opts *cloudWatchOpts, urls []string, prefix string, rp bool) 
 			Statistics: []string{
 				*opts.statistics,
 			},
-			Alias: alias(*opts.metricName) + ":" + qn,
+			//Alias: alias(*opts.metricName) + ":" + qn,
+			Alias: qn,
 		}
 		targets = append(targets, t)
 	}
