@@ -74,8 +74,8 @@ func main() {
 	app.Command("cloudwatch", "CloudWatch", func(c *cli.Cmd) {
 		c.Command("list-metrics", "", func(c *cli.Cmd) {
 			var (
-				r  = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
 				ns = c.String(cli.StringArg{Name: "NAMESPACE", Desc: "CloudWatch namespace e.g) AWS/EC2"})
+				r  = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
 			)
 			c.Spec = "NAMESPACE [REGION]"
 			c.Action = func() {
