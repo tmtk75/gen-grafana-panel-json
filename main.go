@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
@@ -14,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/sqs"
 	"github.com/jawher/mow.cli"
 )
 
@@ -36,17 +36,31 @@ func main() {
 		}
 	})
 	app.Command("sqs", "SQS", func(c *cli.Cmd) {
-		//rp := c.String(cli.StringOpt{Name: "remove-prefix", Desc: "Remove prefix from alias"})
 		opts := newCloudWatchOpts(c)
-		c.Spec = "DATASOURCE_NAME [OPTIONS]"
+		p := c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
+		c.Spec = "DATASOURCE_NAME PREFIX [OPTIONS]"
 		c.Action = func() {
-			bytes, err := ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				log.Fatalf("failed to read stdin: %v", err)
-			}
+			//bytes, err := ioutil.ReadAll(os.Stdin)
+			//if err != nil {
+			//	log.Fatalf("failed to read stdin: %v", err)
+			//}
+			///qs := strings.Split(string(bytes), "\n")
+			qs := ListQueues(*opts.region, *p)
 			p := NewGrafanaPanel(*opts.dsName, "SQS "+*opts.metricName)
-			p.Targets = NewTargetsSQS(opts, strings.Split(string(bytes), "\n"))
+			p.Targets = NewTargetsSQS(opts, qs)
 			PrintGrafanaPanelJSON(p)
+		}
+	})
+	app.Command("list-queues", "SQS", func(c *cli.Cmd) {
+		var (
+			r = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
+			p = c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
+		)
+		c.Spec = "REGION [PREFIX]"
+		c.Action = func() {
+			for _, q := range ListQueues(*r, *p) {
+				fmt.Printf("%v\n", q)
+			}
 		}
 	})
 	app.Command("cloudwatch", "CloudWatch", func(c *cli.Cmd) {
@@ -64,6 +78,27 @@ func main() {
 	app.Run(os.Args)
 }
 
+func ListQueues(region, prefix string) []string {
+	svc := sqs.New(session.New(), &aws.Config{Region: aws.String(region)})
+	req := sqs.ListQueuesInput{
+		QueueNamePrefix: aws.String(prefix),
+	}
+	res, err := svc.ListQueues(&req)
+	if err != nil {
+		log.Fatalf("%v", err)
+	}
+	qs := make([]string, 0)
+	for _, q := range res.QueueUrls {
+		qs = append(qs, *q)
+	}
+	return qs
+}
+
+func queueName(q string) string {
+	s := strings.Split(q, "/")
+	return s[len(s)-1] // queue name
+}
+
 type cloudWatchOpts struct {
 	dsName     *string
 	metricName *string
@@ -73,7 +108,16 @@ type cloudWatchOpts struct {
 
 func ListMetrics(ns, region string, nextToken *string) {
 	svc := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(region)})
-	req := cloudwatch.ListMetricsInput{Namespace: aws.String(ns)}
+	req := cloudwatch.ListMetricsInput{
+		Namespace:  aws.String(ns),
+		Dimensions: []*cloudwatch.DimensionFilter{
+		//&cloudwatch.DimensionFilter{
+		//	Name:  aws.String("QueueName"),
+		//	Value: aws.String("stg-jp"),
+		//},
+		},
+		NextToken: nextToken,
+	}
 	res, err := svc.ListMetrics(&req)
 	if err != nil {
 		log.Fatalf("%v", err)
@@ -120,11 +164,7 @@ func NewTargetsSQS(opts *cloudWatchOpts, urls []string) []Target {
 	//}
 	targets := make([]Target, 0)
 	for i, q := range urls {
-		if q == "" {
-			continue // skip blank line
-		}
-		s := strings.Split(q, "/")
-		qn := s[len(s)-1] // queue name
+		qn := queueName(q)
 		//fmt.Println(qn)
 		t := Target{
 			Dimensions: map[string]string{
