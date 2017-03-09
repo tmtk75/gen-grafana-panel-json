@@ -141,7 +141,7 @@ func ListMetrics(ns, region string, nextToken *string) {
 func newCloudWatchOpts(c *cli.Cmd) *cloudWatchOpts {
 	return &cloudWatchOpts{
 		dsName:     c.String(cli.StringArg{Name: "DATASOURCE_NAME", Desc: "Grafana datasource name"}),
-		metricName: c.String(cli.StringOpt{Name: "metricName m", Value: "CPUUtilization", Desc: "CloudWatch MetricName"}),
+		metricName: c.String(cli.StringOpt{Name: "metric-name m", Value: "CPUUtilization", Desc: "CloudWatch MetricName"}),
 		region:     c.String(cli.StringOpt{Name: "region r", Value: "ap-northeast-1", Desc: "AWS region"}),
 		statistics: c.String(cli.StringOpt{Name: "statistics s", Value: "Average", Desc: "e.g: Average,Maximum,Minimum,Sum,SampleCount"}),
 	}
