@@ -40,12 +40,13 @@ func main() {
 	})
 	app.Command("sqs", "SQS", func(c *cli.Cmd) {
 		opts := newCloudWatchOpts(c)
-		p := c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
-		c.Spec = "DATASOURCE_NAME PREFIX [OPTIONS]"
+		px := c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
+		rp := c.Bool(cli.BoolOpt{Name: "remove-prefix", Desc: "Prefix"})
+		c.Spec = "[OPTIONS] DATASOURCE_NAME PREFIX"
 		c.Action = func() {
 			var qs []string
 			if terminal.IsTerminal(int(os.Stdin.Fd())) {
-				qs = ListQueues(*opts.region, *p)
+				qs = ListQueues(*opts.region, *px)
 			} else {
 				bytes, err := ioutil.ReadAll(os.Stdin)
 				if err != nil {
@@ -53,8 +54,8 @@ func main() {
 				}
 				qs = strings.Split(strings.Trim(string(bytes), "\n"), "\n")
 			}
-			p := NewGrafanaPanel(*opts.dsName, "SQS "+*opts.metricName)
-			p.Targets = NewTargetsSQS(opts, qs)
+			p := NewGrafanaPanel(*opts.dsName, fmt.Sprintf("SQS %v-* %v", *px, *opts.metricName))
+			p.Targets = NewTargetsSQS(opts, qs, *px, *rp)
 			PrintGrafanaPanelJSON(p)
 		}
 	})
@@ -160,22 +161,20 @@ func alias(s string) string {
 	return re.ReplaceAllString(a, "")
 }
 
-func NewTargetsSQS(opts *cloudWatchOpts, urls []string) []Target {
-	//svc := sqs.New(session.New(), &aws.Config{Region: aws.String(*region)})
-	//req := sqs.ListQueuesInput{
-	//	QueueNamePrefix: aws.String("stg-jp_1"),
-	//}
-	//res, err := svc.ListQueues(&req)
-	//if err != nil {
-	//	return []Target{}
-	//}
+func removePrefix(prefix, s string) string {
+	return strings.TrimLeft(s, prefix)
+}
+
+func NewTargetsSQS(opts *cloudWatchOpts, urls []string, prefix string, rp bool) []Target {
 	targets := make([]Target, 0)
 	for i, q := range urls {
 		qn := queueName(q)
-		//fmt.Println(qn)
+		if rp {
+			qn = removePrefix(prefix, qn)
+		}
 		t := Target{
 			Dimensions: map[string]string{
-				"QueueName": qn,
+				"QueueName": queueName(q),
 			},
 			MetricName: *opts.metricName,
 			Namespace:  "AWS/SQS",

@@ -32,3 +32,21 @@ func TestQueueName(t *testing.T) {
 		}
 	}
 }
+
+func TestRemovePrefix(t *testing.T) {
+	ts := []struct {
+		prefix string
+		input  string
+		exp    string
+	}{
+		{prefix: "dev-", input: "dev-a", exp: "a"},
+		{prefix: "stg-", input: "stg-b", exp: "b"},
+		{prefix: "aaa-", input: "prd-c", exp: "prd-c"},
+	}
+	for _, c := range ts {
+		r := removePrefix(c.prefix, c.input)
+		if r != c.exp {
+			t.Fatalf("expect: %v, but actual: %v for %v", c.exp, r, c.input)
+		}
+	}
+}
