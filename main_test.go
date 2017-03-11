@@ -42,6 +42,7 @@ func TestRemovePrefix(t *testing.T) {
 		{prefix: "dev-", input: "dev-a", exp: "a"},
 		{prefix: "stg-", input: "stg-b", exp: "b"},
 		{prefix: "aaa-", input: "prd-c", exp: "prd-c"},
+		{prefix: "aaa-", input: "aaa-abc", exp: "abc"},
 	}
 	for _, c := range ts {
 		r := removePrefix(c.prefix, c.input)

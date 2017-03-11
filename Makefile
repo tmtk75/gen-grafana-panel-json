@@ -3,8 +3,8 @@ cmd := gen-grafana-panel-json
 flags := -ldflags "-X main.versionShort=`git describe --tags --abbrev=0` \
 	           -X main.versionLong=`git describe --tags`"
 
-$(cmd): main.go vendor
-	go build $(flags) -o $(cmd)  main.go
+$(cmd): *.go vendor
+	go build $(flags) -o $(cmd)  *.go
 
 vendor:
 	glide up
