@@ -2,14 +2,55 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"regexp"
 	"strings"
+
+	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sqs"
+	"github.com/jawher/mow.cli"
 )
+
+type SQS struct {
+	*cloudwatchOpts
+	queues  []string
+	prefix  string
+	remove  bool
+	exclude *regexp.Regexp
+}
+
+func sqsCmd(c *cli.Cmd) {
+	opts := newCloudwatchOpts(c)
+	px := c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
+	rp := c.Bool(cli.BoolOpt{Name: "remove-prefix", Desc: "Prefix"})
+	exc := c.String(cli.StringOpt{Name: "exclude", Desc: ""})
+	c.Spec = "[OPTIONS] DATASOURCE_NAME PREFIX"
+	c.Action = func() {
+		var qs []string
+		if terminal.IsTerminal(int(os.Stdin.Fd())) {
+			qs = ListQueues(*opts.region, *px)
+		} else {
+			bytes, err := ioutil.ReadAll(os.Stdin)
+			if err != nil {
+				log.Fatalf("failed to read stdin: %v", err)
+			}
+			qs = strings.Split(strings.Trim(string(bytes), "\n"), "\n")
+		}
+		var re *regexp.Regexp
+		if *exc != "" {
+			re = regexp.MustCompile(*exc)
+		}
+		p := NewGrafanaPanel(*opts.dsName, fmt.Sprintf("SQS %v-* %v", *px, *opts.metricName))
+		sqs := SQS{cloudwatchOpts: opts, queues: qs, prefix: *px, remove: *rp, exclude: re}
+		p.Targets = sqs.NewTargets()
+		PrintGrafanaPanelJSON(p)
+	}
+}
 
 func ListQueues(region, prefix string) []string {
 	svc := sqs.New(session.New(), &aws.Config{Region: aws.String(region)})
@@ -36,14 +77,15 @@ func removePrefix(prefix, s string) string {
 	return strings.Replace(s, prefix, "", 1)
 }
 
-func NewTargetsSQS(opts *cloudwatchOpts, urls []string, prefix string, rp bool, exclude *regexp.Regexp) []Target {
+func (e *SQS) NewTargets() []Target {
+	opts := e.cloudwatchOpts
 	targets := make([]Target, 0)
-	for i, q := range urls {
+	for i, q := range e.queues {
 		qn := queueName(q)
-		if rp {
-			qn = removePrefix(prefix, qn)
+		if e.remove {
+			qn = removePrefix(e.prefix, qn)
 		}
-		if exclude != nil && exclude.Match([]byte(qn)) {
+		if e.exclude != nil && e.exclude.Match([]byte(qn)) {
 			continue
 		}
 		t := Target{

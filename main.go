@@ -2,13 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
-	"regexp"
-	"strings"
-
-	"golang.org/x/crypto/ssh/terminal"
 
 	"github.com/jawher/mow.cli"
 )
@@ -41,33 +35,6 @@ func newCloudwatchOpts(c *cli.Cmd) *cloudwatchOpts {
 		metricName: c.String(cli.StringOpt{Name: "metric-name m", Value: "CPUUtilization", Desc: "CloudWatch MetricName"}),
 		region:     c.String(cli.StringOpt{Name: "region r", Value: "ap-northeast-1", Desc: "AWS region"}),
 		statistics: c.String(cli.StringOpt{Name: "statistics s", Value: "Average", Desc: "e.g: Average,Maximum,Minimum,Sum,SampleCount"}),
-	}
-}
-
-func sqsCmd(c *cli.Cmd) {
-	opts := newCloudwatchOpts(c)
-	px := c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
-	rp := c.Bool(cli.BoolOpt{Name: "remove-prefix", Desc: "Prefix"})
-	exc := c.String(cli.StringOpt{Name: "exclude", Desc: ""})
-	c.Spec = "[OPTIONS] DATASOURCE_NAME PREFIX"
-	c.Action = func() {
-		var qs []string
-		if terminal.IsTerminal(int(os.Stdin.Fd())) {
-			qs = ListQueues(*opts.region, *px)
-		} else {
-			bytes, err := ioutil.ReadAll(os.Stdin)
-			if err != nil {
-				log.Fatalf("failed to read stdin: %v", err)
-			}
-			qs = strings.Split(strings.Trim(string(bytes), "\n"), "\n")
-		}
-		var re *regexp.Regexp
-		if *exc != "" {
-			re = regexp.MustCompile(*exc)
-		}
-		p := NewGrafanaPanel(*opts.dsName, fmt.Sprintf("SQS %v-* %v", *px, *opts.metricName))
-		p.Targets = NewTargetsSQS(opts, qs, *px, *rp, re)
-		PrintGrafanaPanelJSON(p)
 	}
 }
 
