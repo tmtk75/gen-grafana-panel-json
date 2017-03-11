@@ -9,31 +9,35 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ec2"
+	cli "github.com/jawher/mow.cli"
 )
 
-func NewTargetsEC2(opts *cloudWatchOpts, filters string) []Target {
+type EC2 struct {
+	*cloudwatchOpts
+	filters []*ec2.Filter
+}
+
+func ec2Cmd(c *cli.Cmd) {
+	fs := c.String(cli.StringOpt{Name: "filters", Desc: `e.g: "tag:Name,dev-*", "instance-type,m3.large"`})
+	opts := newCloudwatchOpts(c)
+	c.Spec = "DATASOURCE_NAME [OPTIONS]"
+	c.Action = func() {
+		p := NewGrafanaPanel(*opts.dsName, "EC2 "+*opts.metricName)
+		ec2 := EC2{cloudwatchOpts: opts, filters: parseFilters(*fs)}
+		p.Targets = ec2.NewTargets()
+		PrintGrafanaPanelJSON(p)
+	}
+}
+
+func (e *EC2) NewTargets() []Target {
+	opts := e.cloudwatchOpts
 	f := []*ec2.Filter{
 		&ec2.Filter{
 			Name:   aws.String("instance-state-name"),
 			Values: []*string{aws.String("running")},
 		},
-		//&ec2.Filter{
-		//	Name:   aws.String("tag:Name"),
-		//	Values: []*string{aws.String(*tagName)},
-		//},
 	}
-	if filters != "" {
-		fs := strings.Split(filters, ",")
-		if len(fs)%2 == 1 {
-			log.Fatalln("illegal filters option: it should be even")
-		}
-		for i := 0; i*2 < len(fs); i++ {
-			f = append(f, &ec2.Filter{
-				Name:   aws.String(strings.TrimSpace(fs[i*2])),
-				Values: []*string{aws.String(strings.TrimSpace(fs[i*2+1]))},
-			})
-		}
-	}
+	f = append(f, e.filters...)
 
 	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(*opts.region)})
 	req := ec2.DescribeInstancesInput{Filters: f}
@@ -72,4 +76,19 @@ func NewTargetsEC2(opts *cloudWatchOpts, filters string) []Target {
 
 	sort.Sort(Targets(targets))
 	return targets
+}
+
+func parseFilters(filters string) []*ec2.Filter {
+	f := []*ec2.Filter{}
+	fs := strings.Split(filters, ",")
+	if len(fs)%2 == 1 {
+		log.Fatalln("illegal filters option: it should be even")
+	}
+	for i := 0; i*2 < len(fs); i++ {
+		f = append(f, &ec2.Filter{
+			Name:   aws.String(strings.TrimSpace(fs[i*2])),
+			Values: []*string{aws.String(strings.TrimSpace(fs[i*2+1]))},
+		})
+	}
+	return f
 }

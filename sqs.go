@@ -36,7 +36,7 @@ func removePrefix(prefix, s string) string {
 	return strings.Replace(s, prefix, "", 1)
 }
 
-func NewTargetsSQS(opts *cloudWatchOpts, urls []string, prefix string, rp bool, exclude *regexp.Regexp) []Target {
+func NewTargetsSQS(opts *cloudwatchOpts, urls []string, prefix string, rp bool, exclude *regexp.Regexp) []Target {
 	targets := make([]Target, 0)
 	for i, q := range urls {
 		qn := queueName(q)

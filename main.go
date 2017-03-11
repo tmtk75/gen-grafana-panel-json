@@ -28,15 +28,15 @@ func main() {
 	app.Run(os.Args)
 }
 
-type cloudWatchOpts struct {
+type cloudwatchOpts struct {
 	dsName     *string
 	metricName *string
 	region     *string
 	statistics *string
 }
 
-func newCloudWatchOpts(c *cli.Cmd) *cloudWatchOpts {
-	return &cloudWatchOpts{
+func newCloudwatchOpts(c *cli.Cmd) *cloudwatchOpts {
+	return &cloudwatchOpts{
 		dsName:     c.String(cli.StringArg{Name: "DATASOURCE_NAME", Desc: "Grafana datasource name"}),
 		metricName: c.String(cli.StringOpt{Name: "metric-name m", Value: "CPUUtilization", Desc: "CloudWatch MetricName"}),
 		region:     c.String(cli.StringOpt{Name: "region r", Value: "ap-northeast-1", Desc: "AWS region"}),
@@ -44,19 +44,8 @@ func newCloudWatchOpts(c *cli.Cmd) *cloudWatchOpts {
 	}
 }
 
-func ec2Cmd(c *cli.Cmd) {
-	filters := c.String(cli.StringOpt{Name: "filters", Desc: `e.g: "tag:Name,dev-*", "instance-type,m3.large"`})
-	opts := newCloudWatchOpts(c)
-	c.Spec = "DATASOURCE_NAME [OPTIONS]"
-	c.Action = func() {
-		p := NewGrafanaPanel(*opts.dsName, "EC2 "+*opts.metricName)
-		p.Targets = NewTargetsEC2(opts, *filters)
-		PrintGrafanaPanelJSON(p)
-	}
-}
-
 func sqsCmd(c *cli.Cmd) {
-	opts := newCloudWatchOpts(c)
+	opts := newCloudwatchOpts(c)
 	px := c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
 	rp := c.Bool(cli.BoolOpt{Name: "remove-prefix", Desc: "Prefix"})
 	exc := c.String(cli.StringOpt{Name: "exclude", Desc: ""})
