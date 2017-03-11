@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/jawher/mow.cli"
@@ -36,30 +35,4 @@ func newCloudwatchOpts(c *cli.Cmd) *cloudwatchOpts {
 		region:     c.String(cli.StringOpt{Name: "region r", Value: "ap-northeast-1", Desc: "AWS region"}),
 		statistics: c.String(cli.StringOpt{Name: "statistics s", Value: "Average", Desc: "e.g: Average,Maximum,Minimum,Sum,SampleCount"}),
 	}
-}
-
-func listQueueCmd(c *cli.Cmd) {
-	var (
-		p = c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
-		r = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
-	)
-	c.Spec = "PREFIX [REGION]"
-	c.Action = func() {
-		for _, q := range ListQueues(*r, *p) {
-			fmt.Printf("%v\n", q)
-		}
-	}
-}
-
-func cloudwatchCmd(c *cli.Cmd) {
-	c.Command("list-metrics", "", func(c *cli.Cmd) {
-		var (
-			ns = c.String(cli.StringArg{Name: "NAMESPACE", Desc: "CloudWatch namespace e.g) AWS/EC2"})
-			r  = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
-		)
-		c.Spec = "NAMESPACE [REGION]"
-		c.Action = func() {
-			ListMetrics(*ns, *r, nil)
-		}
-	})
 }

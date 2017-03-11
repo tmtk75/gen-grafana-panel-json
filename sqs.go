@@ -52,6 +52,19 @@ func sqsCmd(c *cli.Cmd) {
 	}
 }
 
+func listQueueCmd(c *cli.Cmd) {
+	var (
+		p = c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
+		r = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
+	)
+	c.Spec = "PREFIX [REGION]"
+	c.Action = func() {
+		for _, q := range ListQueues(*r, *p) {
+			fmt.Printf("%v\n", q)
+		}
+	}
+}
+
 func ListQueues(region, prefix string) []string {
 	svc := sqs.New(session.New(), &aws.Config{Region: aws.String(region)})
 	req := sqs.ListQueuesInput{

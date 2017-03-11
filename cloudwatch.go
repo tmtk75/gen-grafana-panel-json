@@ -7,7 +7,21 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatch"
+	cli "github.com/jawher/mow.cli"
 )
+
+func cloudwatchCmd(c *cli.Cmd) {
+	c.Command("list-metrics", "", func(c *cli.Cmd) {
+		var (
+			ns = c.String(cli.StringArg{Name: "NAMESPACE", Desc: "CloudWatch namespace e.g) AWS/EC2"})
+			r  = c.String(cli.StringArg{Name: "REGION", Value: "ap-northeast-1", Desc: "ap-northeast-1 by default"})
+		)
+		c.Spec = "NAMESPACE [REGION]"
+		c.Action = func() {
+			ListMetrics(*ns, *r, nil)
+		}
+	})
+}
 
 func ListMetrics(ns, region string, nextToken *string) {
 	svc := cloudwatch.New(session.New(), &aws.Config{Region: aws.String(region)})
