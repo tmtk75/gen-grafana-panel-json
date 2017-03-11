@@ -5,7 +5,7 @@ Grafana has [HTTP API](http://docs.grafana.org/reference/http_api) but at a glan
 APIs for panel operations. We con configure panels with JSON. This command generates
 JSONs for panels which datasource is CloudWatch.
 
-# How to use
+# Getting Started
 You need to configure `~/.aws/credentials` first.
 
 Generate a Grafana panel JSON for all EC2 instances in ap-northeast-1 for CPUUtilization.
@@ -15,32 +15,17 @@ $ gen-grafana-panel-json -datasource CloudWatch
 
 Switching profile.
 ```
-$ AWS_PROFILE=staging gen-grafana-panel-json -datasource CloudWatch -region us-west-2
+$ AWS_PROFILE=staging gen-grafana-panel-json ec2 CloudWatch
 ```
 
+# EC2
 To filter EC2, use `-filters`.
 ```
-$ gen-grafana-panel-json -datasource CloudWatch -filters tag:Name,dev-*,instance-type,t2.small
-```
-
-To exclude some elements in targets, use `jq` and `-stdin` option.
-```
-$ gen-grafana-panel-json -datasource CloudWatch \
-  | jq '[.targets[]|select((.alias|test("dev-.*"))|not)]' \
-  | gen-grafana-panel-json -stdin
+$ gen-grafana-panel-json ec2 -filters tag:Name,dev-*,instance-type,t2.* CloudWatch
 ```
 
 # SQS
-List metirc names.
+Give metric name, datasource name and prefix.
 ```
-$ aws cloudwatch list-metrics --namespace AWS/SQS
-```
-Let's say you pick up `ApproximateNumberOfMessagesVisible`.
-```
-aws sqs list-queues --queue-name-prefix dev- \
-  | jq -r .QueueUrls[] | grep -v '_tmp' \
-  | tee qnames
-```
-```
-$ cat qnames | gen-grafana-panel-json CloudWatch -m ApproximateNumberOfMessagesVisible
+$ gen-grafana-panel-json sqs -m ApproximateNumberOfMessagesVisible CloudWatch dev-
 ```
