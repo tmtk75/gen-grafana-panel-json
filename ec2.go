@@ -20,7 +20,7 @@ type EC2 struct {
 func ec2Cmd(c *cli.Cmd) {
 	fs := c.String(cli.StringOpt{Name: "filters", Desc: `e.g: "tag:Name,dev-*", "instance-type,m3.large"`})
 	opts := newCloudwatchOpts(c)
-	c.Spec = "DATASOURCE_NAME [OPTIONS]"
+	c.Spec = "[OPTIONS] DATASOURCE_NAME"
 	c.Action = func() {
 		p := NewGrafanaPanel(*opts.dsName, "EC2 "+*opts.metricName)
 		ec2 := EC2{cloudwatchOpts: opts, filters: parseFilters(*fs)}
