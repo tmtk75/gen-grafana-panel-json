@@ -99,9 +99,3 @@ func newCloudWatchOpts(c *cli.Cmd) *cloudWatchOpts {
 		statistics: c.String(cli.StringOpt{Name: "statistics s", Value: "Average", Desc: "e.g: Average,Maximum,Minimum,Sum,SampleCount"}),
 	}
 }
-
-func alias(s string) string {
-	a := regexp.MustCompile("Of").ReplaceAllString(s, "")
-	re := regexp.MustCompile("[a-z]+")
-	return re.ReplaceAllString(a, "")
-}
