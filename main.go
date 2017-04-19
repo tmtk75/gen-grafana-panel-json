@@ -17,6 +17,7 @@ func main() {
 	app.Command("ec2", "Generate JSON for AWS/EC2", ec2Cmd)
 	app.Command("sqs", "Generate JSON for AWS/SQS", sqsCmd)
 	app.Command("list-queues", "List queue names for SQS", listQueueCmd)
+	app.Command("list-tables", "List table names for DynamoDB", listTableCmd)
 	app.Command("cloudwatch", "CloudWatch commands", cloudwatchCmd)
 	app.Run(os.Args)
 }
