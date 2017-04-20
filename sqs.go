@@ -25,10 +25,12 @@ type SQS struct {
 }
 
 func sqsCmd(c *cli.Cmd) {
-	opts := newCloudwatchOpts(c)
-	px := c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
-	rp := c.Bool(cli.BoolOpt{Name: "remove-prefix", Desc: "Remove prefix in display if true"})
-	exc := c.String(cli.StringOpt{Name: "exclude", Desc: "Regex for name to exclude"})
+	var (
+		opts = newCloudwatchOpts(c)
+		px   = c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
+		rp   = c.Bool(cli.BoolOpt{Name: "remove-prefix", Desc: "Remove prefix in display if true"})
+		exc  = c.String(cli.StringOpt{Name: "exclude", Desc: "Regex for name to exclude"})
+	)
 	c.Spec = "[OPTIONS] DATASOURCE_NAME PREFIX"
 	c.Action = func() {
 		var qs []string
