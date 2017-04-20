@@ -18,7 +18,7 @@ type EC2 struct {
 }
 
 func ec2Cmd(c *cli.Cmd) {
-	fs := c.String(cli.StringOpt{Name: "filters", Desc: `e.g: "tag:Name,dev-*", "instance-type,m3.large"`})
+	fs := c.String(cli.StringOpt{Name: "filters", Desc: `e.g: "tag:Name,dev-*", "instance-type,m3.large", "instance-state-name,running"`})
 	opts := newCloudwatchOpts(c)
 	c.Spec = "[OPTIONS] DATASOURCE_NAME"
 	c.Action = func() {

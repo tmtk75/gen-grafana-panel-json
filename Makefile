@@ -8,6 +8,9 @@ flags := -ldflags "-X main.versionShort=$(VERSION) \
 $(cmd): *.go vendor
 	go build $(flags) -o $(cmd)  *.go
 
+install: *.go vendor
+	go install $(flags)
+
 vendor:
 	glide up
 
