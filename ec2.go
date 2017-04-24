@@ -79,6 +79,10 @@ func (e *EC2) NewTargets() []Target {
 }
 
 func parseFilters(filters string) []*ec2.Filter {
+	if filters == "" {
+		return []*ec2.Filter{}
+	}
+
 	f := []*ec2.Filter{}
 	fs := strings.Split(filters, ",")
 	if len(fs)%2 == 1 {
