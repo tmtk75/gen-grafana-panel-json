@@ -39,12 +39,12 @@ func (e *EC2) NewTargets() []Target {
 	}
 	f = append(f, e.filters...)
 
-	svc := ec2.New(session.New(), &aws.Config{Region: aws.String(*opts.region)})
+	cfg := &aws.Config{Region: aws.String(*opts.region)}
+	svc := ec2.New(session.New(), cfg)
 	req := ec2.DescribeInstancesInput{Filters: f}
 	res, err := svc.DescribeInstances(&req)
 	if err != nil {
-		log.Fatalf("failed to describe-instances: %v", err)
-		log.Fatalf("failed to DescribeInstances: %v", err)
+		log.Fatalf("failed to describe-instances: %v %v", err, cfg.CredentialsChainVerboseErrors)
 	}
 
 	ref := 0
