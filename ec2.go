@@ -80,9 +80,12 @@ func (e *EC2) NewTargets() []Target {
 
 func parseFilters(filters string) []*ec2.Filter {
 	f := []*ec2.Filter{}
-	fs := strings.Split(filters, ",")
-	if len(fs)%2 == 1 {
-		log.Fatalln("illegal filters option: it should be even")
+	fs := []string{}
+	if filters != "" {
+		fs = strings.Split(filters, ",")
+		if len(fs)%2 == 1 {
+			log.Fatalf("illegal filters option: it should be even. %q\n", filters)
+		}
 	}
 	for i := 0; i*2 < len(fs); i++ {
 		f = append(f, &ec2.Filter{
