@@ -1,12 +1,12 @@
 version: 2
 jobs:
   build:
-    branches:
-      only:
-        - master
-        - /[0-9]\.[0-9]\.[0-9]/
-      #ignore:
-      #  - /dev-.*/
+    #branches:
+    #  only:
+    #    - master
+    #    - /[0-9]\.[0-9]\.[0-9]/
+    #  #ignore:
+    #  #  - /dev-.*/
 
     docker:
       - image: circleci/golang:1.8
