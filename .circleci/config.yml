@@ -1,0 +1,46 @@
+version: 2
+jobs:
+  build:
+    branches:
+      only:
+        - master
+        - /[0-9]\.[0-9]\.[0-9]/
+      #ignore:
+      #  - /dev-.*/
+
+    docker:
+      - image: circleci/golang:1.8
+
+    working_directory: /go/src/github.com/tmtk75/gen-grafana-panel-json
+
+    steps:
+      - checkout
+
+      - restore_cache:
+          keys:
+            - v{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}-{{ checksum "glide.lock" }}
+
+      - run: go get github.com/Masterminds/glide
+
+      - save_cache:
+          key: v{{ .Environment.CIRCLE_CACHE_VERSION }}-{{ .Branch }}-{{ .Environment.CIRCLE_JOB }}-{{ checksum "glide.lock" }}
+          paths:
+            - vendor
+
+      - run: glide update
+
+      - run: go build .
+
+      - run: go test .
+
+      - store_artifacts:
+          path: ./gen-grafana-panel-json
+          destination: gen-grafana-panel-json
+
+      - deploy:
+          command: |
+            if [ "${CIRCLE_BRANCH}" == "master" ]; then
+              version=`git describe --tag`-${CIRCLE_BUILD_NUM}
+              ghr -u tmtk75 ${version} pkg/dist
+            fi
+
