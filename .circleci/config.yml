@@ -29,13 +29,15 @@ jobs:
 
       - run: glide update
 
-      - run: go build .
+      - run: |
+          go build .
+          gzip gen-grafana-panel-json
 
       - run: go test .
 
       - store_artifacts:
-          path: ./gen-grafana-panel-json
-          destination: gen-grafana-panel-json
+          path: ./gen-grafana-panel-json.gz
+          destination: gen-grafana-panel-json.gz
 
       - deploy:
           command: |
