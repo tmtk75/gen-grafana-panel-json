@@ -15,15 +15,19 @@ import (
 type EC2 struct {
 	*cloudwatchOpts
 	filters []*ec2.Filter
+	prefix  string
 }
 
 func ec2Cmd(c *cli.Cmd) {
-	fs := c.String(cli.StringOpt{Name: "filters", Desc: `e.g: "tag:Name,dev-*", "instance-type,m3.large", "instance-state-name,running"`})
+	var (
+		fs = c.String(cli.StringOpt{Name: "filters", Desc: `e.g: "tag:Name,dev-*", "instance-type,m3.large", "instance-state-name,running"`})
+		rp = c.String(cli.StringOpt{Name: "remove-prefix", Desc: "Prefix to remove in alias"})
+	)
 	opts := newCloudwatchOpts(c)
 	c.Spec = "[OPTIONS] DATASOURCE_NAME"
 	c.Action = func() {
 		p := NewGrafanaPanel(*opts.dsName, "EC2 "+*opts.metricName)
-		ec2 := EC2{cloudwatchOpts: opts, filters: parseFilters(*fs)}
+		ec2 := EC2{cloudwatchOpts: opts, filters: parseFilters(*fs), prefix: *rp}
 		p.Targets = ec2.NewTargets()
 		PrintGrafanaPanelJSON(p)
 	}
@@ -57,6 +61,7 @@ func (e *EC2) NewTargets() []Target {
 				if *t.Key == "Name" {
 					alias = *t.Value
 				}
+				alias = strings.Replace(alias, e.prefix, "", 1)
 			}
 			targets = append(targets, Target{
 				Dimensions: map[string]string{"InstanceId": *i.InstanceId},
