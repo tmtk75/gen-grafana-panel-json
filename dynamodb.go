@@ -18,14 +18,16 @@ import (
 
 type DynamoDB struct {
 	*cloudwatchOpts
-	prefix string
-	tables []string
+	prefix      string
+	tables      []string
+	aliasSuffix string
 }
 
 func dynamodbCmd(c *cli.Cmd) {
 	var (
 		opts = newCloudwatchOpts(c)
 		px   = c.String(cli.StringArg{Name: "PREFIX", Desc: "Prefix to filter"})
+		as   = c.String(cli.StringOpt{Name: "alias-suffix", Value: "", Desc: "Alias suffix. ex) .w, .r"})
 	)
 	c.Spec = "[OPTIONS] DATASOURCE_NAME [PREFIX]"
 	c.Action = func() {
@@ -55,7 +57,7 @@ func dynamodbCmd(c *cli.Cmd) {
 		}
 
 		p := NewGrafanaPanel(*opts.dsName, fmt.Sprintf("DynamoDB %v* %v %v", *px, *opts.metricName, *opts.statistics))
-		dynamo := DynamoDB{cloudwatchOpts: opts, prefix: *px, tables: ns}
+		dynamo := DynamoDB{cloudwatchOpts: opts, prefix: *px, tables: ns, aliasSuffix: *as}
 		p.Targets = dynamo.NewTargets()
 		PrintGrafanaPanelJSON(p)
 	}
@@ -104,7 +106,7 @@ func (e *DynamoDB) NewTargets() []Target {
 			Statistics: []string{
 				*opts.statistics,
 			},
-			Alias: strings.TrimPrefix(n, e.prefix),
+			Alias: strings.TrimPrefix(n, e.prefix) + e.aliasSuffix,
 		}
 		targets = append(targets, t)
 	}
